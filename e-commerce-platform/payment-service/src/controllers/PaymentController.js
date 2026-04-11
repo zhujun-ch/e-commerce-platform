@@ -6,10 +6,17 @@ class PaymentController {
     try {
       const { order_id, payment_method = 'card' } = req.body;
 
-      // Get order total from order service (in real app, call order-service API)
-      // For now, assume we have the amount
-      const amount = req.body.amount || 0;
-
+      // Get order total from order service
+      const orderServiceUrl = process.env.ORDER_SERVICE_URL || 'http://order-service:8004';
+      const authHeader = req.headers.authorization;
+      const orderResponse = await fetch(`${orderServiceUrl}/orders/${order_id}`, {
+        headers: authHeader ? { authorization: authHeader } : {}
+      });
+      if (!orderResponse.ok) {
+        return res.status(400).json({ error: 'Order not found' });
+      }
+      const orderData = await orderResponse.json();
+      const amount = orderData.order.total_amount;
       const id = uuidv4();
 
       await pool.execute(
@@ -54,11 +61,17 @@ class PaymentController {
 
   static async handleWebhook(req, res) {
     try {
-      // In real app, verify Stripe signature
-      // const sig = req.headers['stripe-signature'];
-      // const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      const stripe = require('stripe')(process.env.STRIPE_API_KEY);
+      const sig = req.headers['stripe-signature'];
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-      const event = req.body;
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).json({ error: 'Webhook signature verification failed' });
+      }
 
       switch (event.type) {
         case 'payment_intent.succeeded':

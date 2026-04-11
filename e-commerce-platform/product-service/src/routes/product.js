@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query, param } = require('express-validator');
 const ProductController = require('../controllers/ProductController');
+const AuthMiddleware = require('../middleware/AuthMiddleware');
 
 const router = express.Router();
 
@@ -17,8 +18,10 @@ router.get('/:id', [
   param('id').trim()
 ], ProductController.getProductById);
 
-// Create product
+// Create product (admin only)
 router.post('/', [
+  AuthMiddleware.verifyToken,
+  AuthMiddleware.requireAdmin,
   body('name').notEmpty().trim(),
   body('price').isFloat({ min: 0 }),
   body('category').optional().trim(),
@@ -27,8 +30,10 @@ router.post('/', [
   body('stock').optional().isInt({ min: 0 }).toInt()
 ], ProductController.createProduct);
 
-// Update product
+// Update product (admin only)
 router.put('/:id', [
+  AuthMiddleware.verifyToken,
+  AuthMiddleware.requireAdmin,
   param('id').trim(),
   body('name').optional().notEmpty().trim(),
   body('price').optional().isFloat({ min: 0 }),
@@ -38,8 +43,10 @@ router.put('/:id', [
   body('stock').optional().isInt({ min: 0 }).toInt()
 ], ProductController.updateProduct);
 
-// Delete product
+// Delete product (admin only)
 router.delete('/:id', [
+  AuthMiddleware.verifyToken,
+  AuthMiddleware.requireAdmin,
   param('id').trim()
 ], ProductController.deleteProduct);
 

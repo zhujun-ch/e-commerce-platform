@@ -9,17 +9,26 @@ class CartController {
     try {
       const userId = req.user.id;
 
-      // Get cart items directly from cart_items table (product info stored locally)
+      // Get cart items directly from cart_items table
       const [items] = await pool.execute(
-        `SELECT id, product_id, product_name, product_price, product_image_url, quantity
+        `SELECT id, product_id, product_name, product_image_url, quantity
          FROM cart_items
          WHERE user_id = ?`,
         [userId]
       );
 
-      const total = items.reduce((sum, item) => {
-        return sum + (parseFloat(item.product_price) * item.quantity);
-      }, 0);
+      // Fetch current prices from product-service
+      let total = 0;
+      for (const item of items) {
+        try {
+          const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${item.product_id}`);
+          item.product_price = response.data.product.price;
+          total += parseFloat(response.data.product.price) * item.quantity;
+        } catch (apiError) {
+          console.error(`Failed to fetch price for product ${item.product_id}:`, apiError);
+          item.product_price = 0;
+        }
+      }
 
       res.json({
         items,
@@ -63,12 +72,12 @@ class CartController {
           [newQuantity, existing[0].id]
         );
       } else {
-        // Insert new item with product info stored locally
+        // Insert new item (do not store price - will be fetched at checkout)
         const id = uuidv4();
         await pool.execute(
-          `INSERT INTO cart_items (id, user_id, product_id, product_name, product_price, product_image_url, quantity)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [id, userId, product_id, product.name, product.price, product.image_url, quantity]
+          `INSERT INTO cart_items (id, user_id, product_id, product_name, product_image_url, quantity)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, userId, product_id, product.name, product.image_url, quantity]
         );
       }
 

@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   charset: 'utf8mb4'
 });
 
-// Product seed data with real image URLs
+// Product seed data with real image URLs (Unsplash)
 const seedProducts = [
   {
     id: '93d809f0-c573-4be9-9285-832ecfd31ed2',
@@ -19,7 +19,7 @@ const seedProducts = [
     description: 'Latest Apple iPhone with A17 Pro chip, titanium design, and advanced camera system',
     price: 999.99,
     category: 'Electronics',
-    image_url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=500&h=500&fit=crop',
     stock: 50
   },
   {
@@ -28,7 +28,7 @@ const seedProducts = [
     description: 'Supercharged by M3 chip, fanless design, up to 18 hours battery life',
     price: 1099.99,
     category: 'Electronics',
-    image_url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&h=500&fit=crop',
     stock: 30
   },
   {
@@ -37,7 +37,7 @@ const seedProducts = [
     description: 'Active Noise Cancellation, Transparency mode, Spatial Audio',
     price: 249.99,
     category: 'Electronics',
-    image_url: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=500&h=500&fit=crop',
     stock: 100
   },
   {
@@ -46,7 +46,7 @@ const seedProducts = [
     description: 'Premium athletic shoes with Air Max cushioning and breathable mesh upper',
     price: 159.99,
     category: 'Fashion',
-    image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop',
     stock: 75
   },
   {
@@ -55,7 +55,7 @@ const seedProducts = [
     description: 'Industry-leading noise cancellation with exceptional sound quality',
     price: 349.99,
     category: 'Electronics',
-    image_url: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
     stock: 40
   },
   {
@@ -64,7 +64,7 @@ const seedProducts = [
     description: 'Comfortable cotton blend hoodie with classic Adidas branding',
     price: 79.99,
     category: 'Fashion',
-    image_url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=80',
+    image_url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&h=500&fit=crop',
     stock: 120
   }
 ];

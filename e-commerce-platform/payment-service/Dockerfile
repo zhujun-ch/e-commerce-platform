@@ -1,0 +1,13 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY payment-service/package*.json ./
+RUN npm install --only=production
+
+COPY payment-service/src/ ./src/
+COPY shared/ ./src/shared/
+
+EXPOSE 8005
+
+CMD ["node", "src/index.js"]

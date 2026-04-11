@@ -17,15 +17,17 @@ services:
 
   # Auth Service
   auth-service:
-    build: ./auth-service
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
     ports:
       - "8001:8001"
     environment:
       - DB_HOST=auth-db
       - DB_USER=root
-      - DB_PASSWORD=auth123
+      - DB_PASSWORD=${AUTH_DB_PASSWORD:-auth123}
       - DB_NAME=auth_db
-      - JWT_SECRET=your-secret-key
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -35,7 +37,7 @@ services:
   auth-db:
     image: mysql:8.0
     environment:
-      - MYSQL_ROOT_PASSWORD=auth123
+      - MYSQL_ROOT_PASSWORD=${AUTH_DB_PASSWORD:-auth123}
       - MYSQL_DATABASE=auth_db
     volumes:
       - auth-db-data:/var/lib/mysql
@@ -49,13 +51,15 @@ services:
 
   # Product Service
   product-service:
-    build: ./product-service
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
     ports:
       - "8002:8002"
     environment:
       - DB_HOST=product-db
       - DB_USER=root
-      - DB_PASSWORD=product123
+      - DB_PASSWORD=${PRODUCT_DB_PASSWORD:-product123}
       - DB_NAME=product_db
     depends_on:
       product-db:
@@ -66,7 +70,7 @@ services:
   product-db:
     image: mysql:8.0
     environment:
-      - MYSQL_ROOT_PASSWORD=product123
+      - MYSQL_ROOT_PASSWORD=${PRODUCT_DB_PASSWORD:-product123}
       - MYSQL_DATABASE=product_db
     volumes:
       - product-db-data:/var/lib/mysql
@@ -80,15 +84,18 @@ services:
 
   # Cart Service
   cart-service:
-    build: ./cart-service
+    build:
+      context: .
+      dockerfile: cart-service/Dockerfile
     ports:
       - "8003:8003"
     environment:
       - DB_HOST=cart-db
       - DB_USER=root
-      - DB_PASSWORD=cart123
+      - DB_PASSWORD=${CART_DB_PASSWORD:-cart123}
       - DB_NAME=cart_db
       - PRODUCT_SERVICE_URL=http://product-service:8002
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
     depends_on:
       cart-db:
         condition: service_healthy
@@ -98,7 +105,7 @@ services:
   cart-db:
     image: mysql:8.0
     environment:
-      - MYSQL_ROOT_PASSWORD=cart123
+      - MYSQL_ROOT_PASSWORD=${CART_DB_PASSWORD:-cart123}
       - MYSQL_DATABASE=cart_db
     volumes:
       - cart-db-data:/var/lib/mysql
@@ -112,17 +119,21 @@ services:
 
   # Order Service
   order-service:
-    build: ./order-service
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
     ports:
       - "8004:8004"
     environment:
       - DB_HOST=order-db
       - DB_USER=root
-      - DB_PASSWORD=order123
+      - DB_PASSWORD=${ORDER_DB_PASSWORD:-order123}
       - DB_NAME=order_db
       - CART_DB_HOST=cart-db
       - CART_DB_USER=root
-      - CART_DB_PASSWORD=cart123
+      - CART_DB_PASSWORD=${CART_DB_PASSWORD:-cart123}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - PRODUCT_SERVICE_URL=http://product-service:8002
     depends_on:
       order-db:
         condition: service_healthy
@@ -132,7 +143,7 @@ services:
   order-db:
     image: mysql:8.0
     environment:
-      - MYSQL_ROOT_PASSWORD=order123
+      - MYSQL_ROOT_PASSWORD=${ORDER_DB_PASSWORD:-order123}
       - MYSQL_DATABASE=order_db
     volumes:
       - order-db-data:/var/lib/mysql
@@ -146,15 +157,19 @@ services:
 
   # Payment Service
   payment-service:
-    build: ./payment-service
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
     ports:
       - "8005:8005"
     environment:
       - DB_HOST=payment-db
       - DB_USER=root
-      - DB_PASSWORD=payment123
+      - DB_PASSWORD=${PAYMENT_DB_PASSWORD:-payment123}
       - DB_NAME=payment_db
       - STRIPE_API_KEY=${STRIPE_API_KEY:-sk_test_placeholder}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - ORDER_SERVICE_URL=http://order-service:8004/api
     depends_on:
       payment-db:
         condition: service_healthy
@@ -164,7 +179,7 @@ services:
   payment-db:
     image: mysql:8.0
     environment:
-      - MYSQL_ROOT_PASSWORD=payment123
+      - MYSQL_ROOT_PASSWORD=${PAYMENT_DB_PASSWORD:-payment123}
       - MYSQL_DATABASE=payment_db
     volumes:
       - payment-db-data:/var/lib/mysql

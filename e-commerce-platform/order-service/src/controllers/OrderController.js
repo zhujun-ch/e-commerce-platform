@@ -1,6 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 const mysql = require('mysql2/promise');
 const { pool } = require('../config/database');
+
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:8002';
 
 // Create separate connection pool for cart_db to read cart items
 const cartPool = mysql.createPool({
@@ -15,43 +18,65 @@ const cartPool = mysql.createPool({
 
 class OrderController {
   static async createOrder(req, res) {
+    const connection = await pool.getConnection();
     try {
       const userId = req.user.id;
       const { shipping_address } = req.body;
 
-      // Get cart items from cart_db (uses product_name, product_price stored in cart_items)
+      // Get cart items from cart_db (product_name is stored, price will be fetched in real-time)
       const [cartItems] = await cartPool.execute(
-        'SELECT product_id, product_name, product_price, quantity FROM cart_items WHERE user_id = ?',
+        'SELECT product_id, product_name, quantity FROM cart_items WHERE user_id = ?',
         [userId]
       );
 
       if (cartItems.length === 0) {
+        connection.release();
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
-      // Calculate total using product_price from cart_items
-      const totalAmount = cartItems.reduce((sum, item) => {
-        return sum + (item.product_price * item.quantity);
-      }, 0);
+      // Fetch real-time prices from product-service
+      let totalAmount = 0;
+      const itemsWithPrice = [];
+      for (const item of cartItems) {
+        try {
+          const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${item.product_id}`);
+          const currentPrice = parseFloat(response.data.product.price);
+          totalAmount += currentPrice * item.quantity;
+          itemsWithPrice.push({
+            ...item,
+            currentPrice
+          });
+        } catch (apiError) {
+          console.error(`Failed to fetch price for product ${item.product_id}:`, apiError);
+          connection.release();
+          return res.status(500).json({ error: `Failed to fetch price for product ${item.product_id}` });
+        }
+      }
 
       const orderId = uuidv4();
 
-      // Create order in order_db
-      await pool.execute(
+      // Begin transaction
+      await connection.beginTransaction();
+
+      // Create order in order_db using the same connection
+      await connection.execute(
         'INSERT INTO orders (id, user_id, total_amount, shipping_address) VALUES (?, ?, ?, ?)',
         [orderId, userId, totalAmount, shipping_address]
       );
 
-      // Create order items
-      for (const item of cartItems) {
+      // Create order items using the same connection with real-time prices
+      for (const item of itemsWithPrice) {
         const itemId = uuidv4();
-        await pool.execute(
+        await connection.execute(
           'INSERT INTO order_items (id, order_id, product_id, product_name, price, quantity) VALUES (?, ?, ?, ?, ?, ?)',
-          [itemId, orderId, item.product_id, item.product_name, item.product_price, item.quantity]
+          [itemId, orderId, item.product_id, item.product_name, item.currentPrice, item.quantity]
         );
       }
 
-      // Clear cart in cart_db
+      // Commit transaction
+      await connection.commit();
+
+      // Clear cart in cart_db (separate database, outside transaction)
       await cartPool.execute('DELETE FROM cart_items WHERE user_id = ?', [userId]);
 
       res.status(201).json({
@@ -60,8 +85,13 @@ class OrderController {
         total_amount: totalAmount
       });
     } catch (error) {
+      // Rollback transaction on error
+      await connection.rollback();
       console.error('Create order error:', error);
       res.status(500).json({ error: 'Failed to create order' });
+    } finally {
+      // Always release the connection
+      connection.release();
     }
   }
 
