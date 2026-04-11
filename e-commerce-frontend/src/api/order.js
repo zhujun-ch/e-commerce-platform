@@ -7,10 +7,13 @@ export const orderAPI = {
   getOrders() {
     return api.get('/orders')
   },
+  getAdminOrders() {
+    return api.get('/orders/admin/all')
+  },
   getOrder(id) {
     return api.get(`/orders/${id}`)
   },
-  updateOrderStatus(id, data) {
-    return api.put(`/orders/${id}/status`, data)
+  updateOrderStatus(id, status) {
+    return api.put(`/orders/${id}/status`, { status })
   }
 }

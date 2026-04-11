@@ -45,6 +45,17 @@ const routes = [
     path: '/order/:id',
     name: 'OrderDetail',
     component: () => import('../views/OrderDetailView.vue')
+  },
+  {
+    path: '/admin',
+    component: () => import('../views/admin/AdminLayout.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      { path: '', name: 'AdminDashboard', component: () => import('../views/admin/AdminDashboard.vue') },
+      { path: 'products', name: 'AdminProducts', component: () => import('../views/admin/AdminProducts.vue') },
+      { path: 'orders', name: 'AdminOrders', component: () => import('../views/admin/AdminOrders.vue') },
+      { path: 'users', name: 'AdminUsers', component: () => import('../views/admin/AdminUsers.vue') }
+    ]
   }
 ]
 

@@ -118,6 +118,72 @@ class UserController {
       res.status(500).json({ error: 'Failed to update profile' });
     }
   }
+
+  // Admin: Get all users
+  static async getAllUsers(req, res) {
+    try {
+      const [users] = await pool.execute(
+        'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
+      );
+
+      res.json({ users });
+    } catch (error) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ error: 'Failed to get users' });
+    }
+  }
+
+  // Admin: Update user role
+  static async updateUserRole(req, res) {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      if (!['user', 'admin'].includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
+
+      const [result] = await pool.execute(
+        'UPDATE users SET role = ? WHERE id = ?',
+        [role, id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ message: 'User role updated' });
+    } catch (error) {
+      console.error('Update user role error:', error);
+      res.status(500).json({ error: 'Failed to update user role' });
+    }
+  }
+
+  // Admin: Delete user
+  static async deleteUser(req, res) {
+    try {
+      const { id } = req.params;
+
+      // Prevent self-deletion
+      if (id === req.user.id) {
+        return res.status(400).json({ error: 'Cannot delete yourself' });
+      }
+
+      const [result] = await pool.execute(
+        'DELETE FROM users WHERE id = ?',
+        [id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: 'Failed to delete user' });
+    }
+  }
 }
 
 module.exports = UserController;

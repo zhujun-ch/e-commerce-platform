@@ -24,4 +24,13 @@ router.get('/profile', AuthMiddleware.verifyToken, UserController.getProfile);
 // Update profile (protected)
 router.put('/profile', AuthMiddleware.verifyToken, UserController.updateProfile);
 
+// Admin: Get all users
+router.get('/admin/users', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, UserController.getAllUsers);
+
+// Admin: Update user role
+router.put('/admin/users/:id/role', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, UserController.updateUserRole);
+
+// Admin: Delete user
+router.delete('/admin/users/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, UserController.deleteUser);
+
 module.exports = router;

@@ -160,6 +160,34 @@ class OrderController {
       res.status(500).json({ error: 'Failed to update order status' });
     }
   }
+
+  // Admin: Get all orders with user info
+  static async getAllOrders(req, res) {
+    try {
+      // Get all orders
+      const [orders] = await pool.execute(`
+        SELECT * FROM orders ORDER BY created_at DESC
+      `);
+
+      // Get order items for each order
+      const ordersWithItems = await Promise.all(orders.map(async (order) => {
+        const [items] = await pool.execute(
+          'SELECT * FROM order_items WHERE order_id = ?',
+          [order.id]
+        );
+        return {
+          ...order,
+          user_name: 'User', // Placeholder - user info requires separate auth service query
+          items
+        };
+      }));
+
+      res.json({ orders: ordersWithItems });
+    } catch (error) {
+      console.error('Get all orders error:', error);
+      res.status(500).json({ error: 'Failed to get orders' });
+    }
+  }
 }
 
 module.exports = OrderController;

@@ -1,0 +1,68 @@
+# Fly.io 多服务合一 Dockerfile
+FROM node:18-alpine
+
+RUN apk add --no-cache nginx sqlite
+
+# 创建应用目录
+RUN mkdir -p /app /data /etc/nginx /usr/share/nginx/html
+
+# 复制应用代码
+COPY package*.json ./
+COPY auth-service ./auth-service
+COPY product-service ./product-service
+COPY cart-service ./cart-service
+COPY order-service ./order-service
+COPY payment-service ./payment-service
+
+# 安装各服务依赖
+WORKDIR /app/auth-service
+RUN npm ci --omit=dev && rm -rf /app/auth-service/node_modules/.cache
+
+WORKDIR /app/product-service
+RUN npm ci --omit=dev && rm -rf /app/product-service/node_modules/.cache
+
+WORKDIR /app/cart-service
+RUN npm ci --omit=dev && rm -rf /app/cart-service/node_modules/.cache
+
+WORKDIR /app/order-service
+RUN npm ci --omit=dev && rm -rf /app/order-service/node_modules/.cache
+
+WORKDIR /app/payment-service
+RUN npm ci --omit=dev && rm -rf /app/payment-service/node_modules/.cache
+
+WORKDIR /app
+
+# 复制 Nginx 配置
+COPY nginx/nginx-prod.conf /etc/nginx/nginx.conf
+
+# 复制前端静态文件 (如果存在)
+COPY frontend /usr/share/nginx/html 2>/dev/null || true
+
+# 创建启动脚本
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'echo "Starting all services..."' >> /start.sh && \
+    echo '' >> /start.sh && \
+    echo '# 启动 Nginx (后台运行)' >> /start.sh && \
+    echo 'nginx -g "daemon off;" &' >> /start.sh && \
+    echo '' >> /start.sh && \
+    echo '# 启动各个微服务 (后台运行)' >> /start.sh && \
+    echo '(cd /app/auth-service && node src/index.js) &' >> /start.sh && \
+    echo '(cd /app/product-service && node src/index.js) &' >> /start.sh && \
+    echo '(cd /app/cart-service && node src/index.js) &' >> /start.sh && \
+    echo '(cd /app/order-service && node src/index.js) &' >> /start.sh && \
+    echo '(cd /app/payment-service && node src/index.js) &' >> /start.sh && \
+    echo '' >> /start.sh && \
+    echo 'echo "All services started on ports: 8001-8005"' >> /start.sh && \
+    echo 'tail -f /dev/null' >> /start.sh
+
+RUN chmod +x /start.sh
+
+# 环境变量
+ENV DB_PATH=/data
+ENV PORT=8080
+
+# 暴露端口
+EXPOSE 8080
+
+# 启动
+CMD ["/start.sh"]

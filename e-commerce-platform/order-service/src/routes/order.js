@@ -23,8 +23,14 @@ router.get('/:id', [
 
 // Update order status (admin)
 router.put('/:id/status', [
+  AuthMiddleware.requireAdmin,
   param('id').trim(),
   body('status').isIn(['pending', 'paid', 'shipped', 'delivered', 'cancelled'])
 ], OrderController.updateOrderStatus);
+
+// Admin: Get all orders
+router.get('/admin/all', [
+  AuthMiddleware.requireAdmin
+], OrderController.getAllOrders);
 
 module.exports = router;
