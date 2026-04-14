@@ -178,6 +178,7 @@
 import { ref, onMounted } from 'vue'
 import { orderAPI } from '../../api/order'
 import { ElMessage } from 'element-plus'
+import { getStatusLabel, formatTime } from '../../utils/formatters'
 
 const loading = ref(false)
 const orders = ref([])
@@ -188,23 +189,6 @@ const pageSize = ref(10)
 const total = ref(0)
 const detailVisible = ref(false)
 const currentOrder = ref(null)
-
-function getStatusLabel(status) {
-  const map = {
-    pending: '待支付',
-    paid: '已支付',
-    shipped: '已发货',
-    delivered: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
-
-function formatTime(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN')
-}
 
 function formatDateTime(dateStr) {
   if (!dateStr) return ''
@@ -226,25 +210,15 @@ function handleSearch() {
 async function fetchOrders() {
   loading.value = true
   try {
-    const data = await orderAPI.getAdminOrders()
-    let allOrders = data.orders || []
-
-    if (statusFilter.value) {
-      allOrders = allOrders.filter(o => o.status === statusFilter.value)
+    const params = {
+      status: statusFilter.value || undefined,
+      search: searchKeyword.value || undefined,
+      page: currentPage.value,
+      pageSize: pageSize.value
     }
-
-    if (searchKeyword.value) {
-      const kw = searchKeyword.value.toLowerCase()
-      allOrders = allOrders.filter(o =>
-        o.id.toLowerCase().includes(kw) ||
-        (o.user_name && o.user_name.toLowerCase().includes(kw))
-      )
-    }
-
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    orders.value = allOrders.slice(start, end)
-    total.value = allOrders.length
+    const data = await orderAPI.getAdminOrders(params)
+    orders.value = data.orders || []
+    total.value = data.total || 0
   } catch (error) {
     console.error('Failed to fetch orders:', error)
   } finally {

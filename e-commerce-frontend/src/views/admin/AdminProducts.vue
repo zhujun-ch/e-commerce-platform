@@ -187,6 +187,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { productAPI } from '../../api/product'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getCategoryLabel } from '../../utils/categories'
 
 const loading = ref(false)
 const products = ref([])
@@ -208,16 +209,6 @@ const productForm = reactive({
   image_url: '',
   description: ''
 })
-
-function getCategoryLabel(category) {
-  const map = {
-    electronics: '电子产品',
-    clothing: '服装',
-    shoes: '鞋履',
-    accessories: '配饰'
-  }
-  return map[category] || category
-}
 
 function resetForm() {
   productForm.name = ''
@@ -286,25 +277,15 @@ function handleSearch() {
 async function fetchProducts() {
   loading.value = true
   try {
-    const data = await productAPI.getProducts({ limit: 100 })
-    let allProducts = data.products || []
-
-    if (categoryFilter.value) {
-      allProducts = allProducts.filter(p => p.category === categoryFilter.value)
+    const params = {
+      category: categoryFilter.value || undefined,
+      search: searchKeyword.value || undefined,
+      page: currentPage.value,
+      pageSize: pageSize.value
     }
-
-    if (searchKeyword.value) {
-      const kw = searchKeyword.value.toLowerCase()
-      allProducts = allProducts.filter(p =>
-        p.name.toLowerCase().includes(kw) ||
-        (p.description && p.description.toLowerCase().includes(kw))
-      )
-    }
-
-    total.value = allProducts.length
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    products.value = allProducts.slice(start, end)
+    const data = await productAPI.getProducts(params)
+    products.value = data.products || []
+    total.value = data.total || 0
   } catch (error) {
     console.error('Failed to fetch products:', error)
     ElMessage.error('获取商品列表失败')

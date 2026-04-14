@@ -1,37 +1,53 @@
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const { pool } = require('../config/database');
-
-const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:8002';
+const { SERVICES } = require('../../../shared/config/services');
 
 class CartController {
   static async getCart(req, res) {
     try {
       const userId = req.user.id;
 
-      // Get cart items directly from cart_items table
+      // Get cart items - only store product_id and quantity
       const [items] = await pool.execute(
-        `SELECT id, product_id, product_name, product_image_url, quantity
+        `SELECT id, product_id, quantity
          FROM cart_items
          WHERE user_id = ?`,
         [userId]
       );
 
-      // Fetch current prices from product-service
+      // Fetch current product details from product-service
       let total = 0;
+      const enrichedItems = [];
+
       for (const item of items) {
         try {
-          const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${item.product_id}`);
-          item.product_price = response.data.product.price;
-          total += parseFloat(response.data.product.price) * item.quantity;
+          const response = await axios.get(`${SERVICES.product.internalUrl}/api/products/${item.product_id}`);
+          const product = response.data.product;
+          enrichedItems.push({
+            id: item.id,
+            product_id: item.product_id,
+            product_name: product.name,
+            product_image_url: product.image_url,
+            product_price: product.price,
+            quantity: item.quantity
+          });
+          total += parseFloat(product.price) * item.quantity;
         } catch (apiError) {
-          console.error(`Failed to fetch price for product ${item.product_id}:`, apiError);
-          item.product_price = 0;
+          console.error(`Failed to fetch product ${item.product_id}:`, apiError);
+          enrichedItems.push({
+            id: item.id,
+            product_id: item.product_id,
+            product_name: 'Unknown',
+            product_image_url: '',
+            product_price: 0,
+            quantity: item.quantity
+          });
         }
       }
 
       res.json({
-        items,
+        items: enrichedItems,
         total: total.toFixed(2)
       });
     } catch (error) {
@@ -48,7 +64,7 @@ class CartController {
       // Fetch product info from product-service API
       let product;
       try {
-        const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${product_id}`);
+        const response = await axios.get(`${SERVICES.product.internalUrl}/api/products/${product_id}`);
         product = response.data.product;
       } catch (apiError) {
         if (apiError.response && apiError.response.status === 404) {
@@ -72,12 +88,12 @@ class CartController {
           [newQuantity, existing[0].id]
         );
       } else {
-        // Insert new item (do not store price - will be fetched at checkout)
+        // Insert new item - only store product_id and quantity
         const id = uuidv4();
         await pool.execute(
-          `INSERT INTO cart_items (id, user_id, product_id, product_name, product_image_url, quantity)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [id, userId, product_id, product.name, product.image_url, quantity]
+          `INSERT INTO cart_items (id, user_id, product_id, quantity)
+           VALUES (?, ?, ?, ?)`,
+          [id, userId, product_id, quantity]
         );
       }
 

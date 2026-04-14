@@ -41,6 +41,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getCategoryLabel } from '../utils/categories'
 
 const props = defineProps({
   product: {
@@ -49,15 +50,8 @@ const props = defineProps({
   }
 })
 
-const categoryMap = {
-  'Electronics': '电子产品',
-  'Clothing': '服装配饰',
-  'Food': '美食生鲜',
-  'Books': '图书音像'
-}
-
 const categoryLabel = computed(() => {
-  return categoryMap[props.product.category] || props.product.category || '精选好物'
+  return getCategoryLabel(props.product.category)
 })
 
 const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzIxMjEyMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTAlIC01MCkiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjY2NjYiPtin6L/pfY8L3N2Zz4='

@@ -3,13 +3,15 @@
     <div class="stats-grid animate-stagger">
       <div class="stat-card">
         <div class="stat-icon sales">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg v-if="!loadingStats.sales" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <line x1="12" y1="1" x2="12" y2="23"/>
             <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
           </svg>
+          <div v-else class="loading-spinner"></div>
         </div>
         <div class="stat-content">
-          <span class="stat-value">¥{{ formatNumber(stats.totalSales) }}</span>
+          <span v-if="!loadingStats.sales" class="stat-value">¥{{ formatNumber(stats.totalSales) }}</span>
+          <span v-else class="stat-value loading-placeholder"></span>
           <span class="stat-label">总销售额</span>
         </div>
         <div class="stat-trend up">
@@ -22,15 +24,17 @@
 
       <div class="stat-card">
         <div class="stat-icon orders">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg v-if="!loadingStats.orders" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/>
             <line x1="16" y1="17" x2="8" y2="17"/>
           </svg>
+          <div v-else class="loading-spinner"></div>
         </div>
         <div class="stat-content">
-          <span class="stat-value">{{ stats.totalOrders }}</span>
+          <span v-if="!loadingStats.orders" class="stat-value">{{ stats.totalOrders }}</span>
+          <span v-else class="stat-value loading-placeholder"></span>
           <span class="stat-label">总订单数</span>
         </div>
         <div class="stat-trend up">
@@ -43,27 +47,31 @@
 
       <div class="stat-card">
         <div class="stat-icon products">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg v-if="!loadingStats.products" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
           </svg>
+          <div v-else class="loading-spinner"></div>
         </div>
         <div class="stat-content">
-          <span class="stat-value">{{ stats.totalProducts }}</span>
+          <span v-if="!loadingStats.products" class="stat-value">{{ stats.totalProducts }}</span>
+          <span v-else class="stat-value loading-placeholder"></span>
           <span class="stat-label">商品数量</span>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon users">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg v-if="!loadingStats.users" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 00-3-3.87"/>
             <path d="M16 3.13a4 4 0 010 7.75"/>
           </svg>
+          <div v-else class="loading-spinner"></div>
         </div>
         <div class="stat-content">
-          <span class="stat-value">{{ stats.totalUsers }}</span>
+          <span v-if="!loadingStats.users" class="stat-value">{{ stats.totalUsers }}</span>
+          <span v-else class="stat-value loading-placeholder"></span>
           <span class="stat-label">用户数量</span>
         </div>
         <div class="stat-trend up">
@@ -160,6 +168,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { orderAPI } from '../../api/order'
 import { productAPI } from '../../api/product'
+import { getStatusLabel, formatTime } from '../../utils/formatters'
 
 const selectedPeriod = ref('7天')
 
@@ -168,6 +177,13 @@ const stats = reactive({
   totalOrders: 0,
   totalProducts: 0,
   totalUsers: 0
+})
+
+const loadingStats = reactive({
+  sales: false,
+  orders: false,
+  products: false,
+  users: false
 })
 
 const orderStats = reactive({
@@ -186,31 +202,13 @@ function formatNumber(num) {
   return Number(num || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function getStatusLabel(status) {
-  const map = {
-    pending: '待支付',
-    paid: '已支付',
-    shipped: '已发货',
-    delivered: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
-
-function formatTime(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return '刚刚'
-  if (hours < 24) return `${hours}小时前`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}天前`
-  return date.toLocaleDateString('zh-CN')
-}
-
 async function fetchDashboardData() {
+  // Set loading states for all stats
+  loadingStats.sales = true
+  loadingStats.orders = true
+  loadingStats.products = true
+  loadingStats.users = true
+
   try {
     const [ordersData, productsData] = await Promise.all([
       orderAPI.getAdminOrders().catch(() => ({ orders: [] })),
@@ -218,8 +216,15 @@ async function fetchDashboardData() {
     ])
 
     const orders = ordersData.orders || []
+
+    // Update stats individually
+    loadingStats.orders = false
     stats.totalOrders = orders.length
+
+    loadingStats.products = false
     stats.totalProducts = productsData.products?.length || 0
+
+    loadingStats.sales = false
     stats.totalSales = orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0)
 
     orders.forEach(order => {
@@ -231,9 +236,15 @@ async function fetchDashboardData() {
 
     recentOrders.value = orders.slice(0, 5)
     updateChartData(orders)
-    stats.totalUsers = Math.floor(stats.totalOrders * 0.6) || 12
+
+    loadingStats.users = false
+    stats.totalUsers = '-'
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error)
+    loadingStats.sales = false
+    loadingStats.orders = false
+    loadingStats.products = false
+    loadingStats.users = false
   }
 }
 
@@ -364,6 +375,34 @@ onMounted(() => {
   font-weight: 500;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
+}
+
+.loading-placeholder {
+  display: inline-block;
+  width: 80px;
+  height: 2rem;
+  background: linear-gradient(90deg, rgba(201, 169, 98, 0.1) 25%, rgba(201, 169, 98, 0.2) 50%, rgba(201, 169, 98, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(201, 169, 98, 0.2);
+  border-top-color: var(--color-accent-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .stat-label {

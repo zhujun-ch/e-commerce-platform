@@ -21,14 +21,14 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
+
+// Webhook needs raw body BEFORE json() parser - Stripe webhooks require raw body for signature verification
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Middleware
+app.use(limiter);
 app.use(cors());
 app.use(express.json());
-
-// Webhook needs raw body (before rate limiting since webhooks come from Stripe)
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Routes
 app.use('/api/payments', paymentRoutes);

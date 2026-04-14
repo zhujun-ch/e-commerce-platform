@@ -7,8 +7,8 @@ export const orderAPI = {
   getOrders() {
     return api.get('/orders')
   },
-  getAdminOrders() {
-    return api.get('/orders/admin/all')
+  getAdminOrders(params) {
+    return api.get('/orders/admin/all', { params })
   },
   getOrder(id) {
     return api.get(`/orders/${id}`)

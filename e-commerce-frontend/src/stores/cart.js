@@ -5,15 +5,23 @@ import { cartAPI } from '../api/cart'
 export const useCartStore = defineStore('cart', () => {
   const items = ref([])
   const total = ref(0)
+  let fetchPromise = null
 
   async function fetchCart() {
-    try {
-      const data = await cartAPI.getCart()
-      items.value = data.items || []
-      total.value = Number(data.total) || 0
-    } catch (error) {
-      console.error('Failed to fetch cart:', error)
-    }
+    // Return existing promise if fetch is already in progress (race condition guard)
+    if (fetchPromise) return fetchPromise
+    fetchPromise = (async () => {
+      try {
+        const data = await cartAPI.getCart()
+        items.value = data.items || []
+        total.value = Number(data.total) || 0
+      } catch (error) {
+        console.error('Failed to fetch cart:', error)
+      } finally {
+        fetchPromise = null
+      }
+    })()
+    return fetchPromise
   }
 
   async function addItem(productId, quantity = 1) {

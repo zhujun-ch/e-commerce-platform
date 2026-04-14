@@ -18,23 +18,12 @@ async function initDatabase() {
         id VARCHAR(36) PRIMARY KEY,
         user_id VARCHAR(36) NOT NULL,
         product_id VARCHAR(36) NOT NULL,
-        product_name VARCHAR(255) NOT NULL,
-        product_price DECIMAL(10, 2) NULL,
-        product_image_url VARCHAR(512),
         quantity INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY unique_user_product (user_id, product_id)
       )
     `);
-
-    // Migrate existing tables: change product_price to allow NULL
-    try {
-      await connection.execute('ALTER TABLE cart_items MODIFY COLUMN product_price DECIMAL(10, 2) NULL');
-    } catch (migrateErr) {
-      // Ignore if column already has correct type or other error
-      console.log('Cart migration note:', migrateErr.message);
-    }
 
     console.log('Cart tables initialized');
   } finally {

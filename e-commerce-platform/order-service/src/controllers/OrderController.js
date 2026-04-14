@@ -2,15 +2,14 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const mysql = require('mysql2/promise');
 const { pool } = require('../config/database');
-
-const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:8002';
+const { SERVICES } = require('../../../shared/config/services');
 
 // Create separate connection pool for cart_db to read cart items
 const cartPool = mysql.createPool({
-  host: process.env.CART_DB_HOST || 'localhost',
-  user: process.env.CART_DB_USER || 'root',
-  password: process.env.CART_DB_PASSWORD || '',
-  database: 'cart_db',
+  host: process.env.CART_DB_HOST || process.env.DB_HOST || 'localhost',
+  user: process.env.CART_DB_USER || process.env.DB_USER || 'root',
+  password: process.env.CART_DB_PASSWORD || process.env.DB_PASSWORD || '',
+  database: process.env.CART_DB_NAME || 'cart_db',
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0
@@ -39,7 +38,7 @@ class OrderController {
       const itemsWithPrice = [];
       for (const item of cartItems) {
         try {
-          const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${item.product_id}`);
+          const response = await axios.get(`${SERVICES.product.internalUrl}/api/products/${item.product_id}`);
           const currentPrice = parseFloat(response.data.product.price);
           totalAmount += currentPrice * item.quantity;
           itemsWithPrice.push({

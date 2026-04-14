@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
+const { SERVICES } = require('../../../shared/config/services');
 
 class PaymentController {
   static async createPayment(req, res) {
@@ -7,9 +8,8 @@ class PaymentController {
       const { order_id, payment_method = 'card' } = req.body;
 
       // Get order total from order service
-      const orderServiceUrl = process.env.ORDER_SERVICE_URL || 'http://order-service:8004';
       const authHeader = req.headers.authorization;
-      const orderResponse = await fetch(`${orderServiceUrl}/orders/${order_id}`, {
+      const orderResponse = await fetch(`${SERVICES.order.internalUrl}/orders/${order_id}`, {
         headers: authHeader ? { authorization: authHeader } : {}
       });
       if (!orderResponse.ok) {

@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// JWT_SECRET should be defined in .env file - this is a fallback for development only
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret-do-not-use-in-production';
 
 class AuthMiddleware {
   static verifyToken(req, res, next) {
@@ -29,4 +30,4 @@ class AuthMiddleware {
   }
 }
 
-module.exports = AuthMiddleware;
+module.exports = { AuthMiddleware, JWT_SECRET };
