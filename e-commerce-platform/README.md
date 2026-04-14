@@ -18,11 +18,16 @@ workshop/
 │   │   ├── views/            # 页面视图
 │   │   ├── views/admin/     # 管理后台视图
 │   │   ├── router/           # 路由配置
+│   │   ├── utils/            # 工具函数
 │   │   └── style.css         # 全局样式
 │   ├── package.json
 │   └── vite.config.js
 │
 └── e-commerce-platform/      # 后端微服务
+    ├── shared/               # 共享模块
+    │   ├── config/           # 服务配置
+    │   ├── middleware/        # 中间件（AuthMiddleware, errorHandler）
+    │   └── utils/            # 工具函数
     ├── auth-service/         # 用户认证服务
     ├── product-service/      # 商品服务
     ├── cart-service/         # 购物车服务
@@ -198,6 +203,35 @@ VITE_API_BASE_URL=http://localhost:8000
 | 邮箱 | 密码 |
 |------|------|
 | superadmin@test.com | admin123 |
+
+## 更新日志
+
+### 2026-04-15 - 共享模块提取与优化
+
+**后端优化：**
+- 新增 `shared/express-common.js` - 提取5个服务共享的Express boilerplate（请求日志、限流、CORS、graceful shutdown）
+- 新增 `shared/database.js` - 统一数据库连接池工厂
+- 新增 `shared/middleware/errorHandler.js` - 统一错误处理中间件
+- 新增 `shared/utils/response.js` - 统一响应助手函数
+- 新增 `shared/config/services.js` - 服务URL集中管理
+- 统一 JWT_SECRET 在 `shared/middleware/AuthMiddleware.js`
+- 修复 product-service JWT_SECRET 环境变量传递问题
+- 修复 payment-service webhook 中间件顺序（express.raw 必须在 rate limiter 之前）
+- 修复 order-service 多数据库池配置问题
+- 删除各服务冗余的 AuthMiddleware.js，统一使用 shared 模块
+
+**前端优化：**
+- 修复管理员路由守卫（检查 `role !== 'admin'`）
+- 新增 `frontend/src/utils/categories.js` - 统一分类映射
+- 新增 `frontend/src/utils/formatters.js` - 共享工具函数（状态标签、时间格式化）
+- 修复 admin 产品管理分类筛选
+- 修复 order API params 传递
+- 修复 cart 请求竞态条件
+- 修复管理员操作商品时登出问题
+
+### 2026-04-12 - 前后端分离与JWT统一
+- 实现前后端完全分离架构
+- 统一 JWT_SECRET 解决跨服务token验证问题
 
 ## 部署
 
