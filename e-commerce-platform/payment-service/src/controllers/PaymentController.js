@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
-const { SERVICES } = require('../../../shared/config/services');
+const { SERVICES } = require('../../src/shared/config/services');
 
 class PaymentController {
   static async createPayment(req, res) {

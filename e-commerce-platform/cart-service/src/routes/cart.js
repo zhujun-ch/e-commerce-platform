@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const CartController = require('../controllers/CartController');
-const AuthMiddleware = require('../shared/middleware/AuthMiddleware');
+const { AuthMiddleware } = require('../../src/shared/middleware/AuthMiddleware');
 
 const router = express.Router();
 

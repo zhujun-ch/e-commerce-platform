@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const { pool } = require('../config/database');
-const { SERVICES } = require('../../../shared/config/services');
+const { SERVICES } = require('../../src/shared/config/services');
 
 class CartController {
   static async getCart(req, res) {

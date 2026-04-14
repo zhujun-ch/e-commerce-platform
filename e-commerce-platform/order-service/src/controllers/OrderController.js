@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const mysql = require('mysql2/promise');
 const { pool } = require('../config/database');
-const { SERVICES } = require('../../../shared/config/services');
+const { SERVICES } = require('../../src/shared/config/services');
 
 // Create separate connection pool for cart_db to read cart items
 const cartPool = mysql.createPool({

@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { pool } = require('../config/database');
-const { JWT_SECRET } = require('../../../shared/middleware/AuthMiddleware');
+const { JWT_SECRET } = require('../../src/shared/middleware/AuthMiddleware');
 
 const JWT_EXPIRES_IN = '24h';
 
