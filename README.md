@@ -15,7 +15,7 @@
 </div>
 
 ---
-![Uploading image.png…]()
+![LUXE 首页](e-commerce-platform/screenshots/platform-preview.png)
 
 
 
