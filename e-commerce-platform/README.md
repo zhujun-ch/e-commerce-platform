@@ -8,7 +8,7 @@
 
 ## 前端展示
 
-![LUXE 首页](https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=600&fit=crop)
+![LUXE 首页](screenshots/platform-preview.png)
 
 ## 项目结构
 
