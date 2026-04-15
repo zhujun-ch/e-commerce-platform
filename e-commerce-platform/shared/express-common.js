@@ -16,7 +16,7 @@ const rateLimit = require('express-rate-limit');
  * @returns {Object} - Configured Express app
  */
 function createExpressApp(options) {
-  const { serviceName, pool, registerRoutes } = options;
+  const { serviceName, pool, registerRoutes, preMiddleware = [] } = options;
   const app = express();
 
   // Request logging middleware
@@ -24,6 +24,9 @@ function createExpressApp(options) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
   });
+
+  // Pre-middleware (e.g., express.raw() for Stripe webhooks)
+  preMiddleware.forEach(mw => app.use(mw));
 
   // Rate limiting - 100 requests per minute per IP
   const limiter = rateLimit({
