@@ -1,6 +1,6 @@
 services:
   # API Gateway
-  nginx:
+  gateway:
     image: nginx:alpine
     ports:
       - "8000:80"
@@ -12,6 +12,18 @@ services:
       - cart-service
       - order-service
       - payment-service
+    networks:
+      - ecommerce-network
+
+  # Frontend
+  frontend-web:
+    build:
+      context: ../e-commerce-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
     networks:
       - ecommerce-network
 

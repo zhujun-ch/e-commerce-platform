@@ -6,6 +6,10 @@
 
 这是一个使用微服务架构的全栈电商平台，支持用户认证、商品浏览、购物车、订单管理、支付等完整电商功能。
 
+## 前端展示
+
+![LUXE 首页](https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=600&fit=crop)
+
 ## 项目结构
 
 ```
@@ -20,6 +24,8 @@ workshop/
 │   │   ├── router/           # 路由配置
 │   │   ├── utils/            # 工具函数
 │   │   └── style.css         # 全局样式
+│   ├── Dockerfile           # Docker 构建文件
+│   ├── nginx.conf           # Nginx 配置
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -33,7 +39,7 @@ workshop/
     ├── cart-service/         # 购物车服务
     ├── order-service/        # 订单服务
     ├── payment-service/      # 支付服务
-    ├── nginx/                # Nginx 配置
+    ├── nginx/                # Nginx 网关配置
     ├── docker-compose.yml    # Docker 编排
     └── package.json
 ```
@@ -45,6 +51,7 @@ workshop/
 - **状态管理**: Pinia
 - **UI框架**: Element Plus
 - **样式**: 自定义CSS设计系统（深色主题 + 金色点缀）
+- **部署**: Nginx Docker 容器
 
 ### 后端（微服务）
 - **运行时**: Node.js + Express
@@ -55,7 +62,6 @@ workshop/
 ## 快速开始
 
 ### 前置要求
-- Node.js 18+
 - Docker & Docker Compose
 
 ### 1. 克隆项目
@@ -64,13 +70,14 @@ git clone https://github.com/zhujun-ch/e-commerce-platform.git
 cd workshop
 ```
 
-### 2. 启动后端（Docker）
+### 2. 启动全部服务（Docker）
 ```bash
 cd e-commerce-platform
 docker-compose up -d
 ```
 
 服务端口：
+- 前端: http://localhost:80
 - API Gateway: http://localhost:8000
 - Auth Service: http://localhost:8001
 - Product Service: http://localhost:8002
@@ -78,35 +85,46 @@ docker-compose up -d
 - Order Service: http://localhost:8004
 - Payment Service: http://localhost:8005
 
-### 3. 启动前端
-```bash
-cd ../e-commerce-frontend
-npm install
-npm run dev
-```
-
-访问 http://localhost:5173
+访问 http://localhost:80
 
 ## 服务架构
 
 ```
-┌─────────────┐
-│   Nginx    │  :8000
-│  (Gateway) │
-└──────┬──────┘
-       │
-   ┌───┴───┬───────┬────────┐
-   ▼       ▼       ▼        ▼
-┌────┐ ┌────┐ ┌─────┐ ┌────────┐
-│Auth│ │Prod│ │Cart │ │Payment │
-│ :1 │ │ :2 │ │  :3 │ │  :5   │
-└────┘ └────┘ └─────┘ └────────┘
-         │              ▲
-         └──────────────┤
-                   ┌────┴────┐
-                   │ Order   │
-                   │  :4     │
-                   └─────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        用户访问                              │
+│                      http://localhost:80                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Nginx Gateway (8000/80)                  │
+│                   前端静态资源 + API 代理                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  Auth Service   │  │ Product Service │  │  Cart Service   │
+│    (8001)       │  │    (8002)       │  │    (8003)       │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+         │                    │                    │
+         │                    │                    ▼
+         │                    │         ┌─────────────────┐
+         │                    │         │ Order Service   │
+         │                    │         │    (8004)       │
+         │                    │         └─────────────────┘
+         │                    │                    │
+         │                    ▼                    ▼
+         │         ┌─────────────────┐  ┌─────────────────┐
+         │         │ Payment Service │  │  MySQL 数据库   │
+         │         │    (8005)       │  │                 │
+         │         └─────────────────┘  └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  MySQL 数据库   │
+│                 │
+└─────────────────┘
 ```
 
 ## 功能特性
@@ -155,9 +173,10 @@ npm run dev
 | 方法 | 路径 | 描述 |
 |------|------|------|
 | GET | /api/cart | 获取购物车 |
-| POST | /api/cart | 添加商品 |
-| PUT | /api/cart/:id | 更新数量 |
-| DELETE | /api/cart/:id | 删除商品 |
+| POST | /api/cart/items | 添加商品 |
+| PUT | /api/cart/items/:id | 更新数量 |
+| DELETE | /api/cart/items/:id | 删除商品 |
+| DELETE | /api/cart | 清空购物车 |
 
 ### 订单服务 (Port 8004)
 | 方法 | 路径 | 描述 |
@@ -171,7 +190,10 @@ npm run dev
 ### 支付服务 (Port 8005)
 | 方法 | 路径 | 描述 |
 |------|------|------|
-| POST | /api/pay | 创建支付 |
+| POST | /api/payments/create | 创建支付 |
+| GET | /api/payments/:id | 获取支付状态 |
+| POST | /api/payments/refund | 申请退款 |
+| POST | /api/payments/webhook | 支付回调（Stripe） |
 
 ## 设计风格
 
@@ -193,11 +215,6 @@ ORDER_DB_PASSWORD=order123
 PAYMENT_DB_PASSWORD=payment123
 ```
 
-### 前端 (.env)
-```env
-VITE_API_BASE_URL=http://localhost:8000
-```
-
 ## 默认管理员账号
 
 | 邮箱 | 密码 |
@@ -206,28 +223,37 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## 更新日志
 
+### 2026-04-15 - 前端容器化与功能完善
+
+**容器化：**
+- 新增 `e-commerce-frontend/Dockerfile` - 前端 Docker 构建文件
+- 新增 `e-commerce-frontend/nginx.conf` - 前端 Nginx 配置（含 API 代理）
+- 更新 `docker-compose.yml` - 添加 frontend-web 服务，API Gateway 更名为 gateway
+- 前端现在完全容器化，访问 http://localhost:80
+
+**功能测试修复：**
+- 修复 `cart_items` 表结构与代码不匹配问题
+- 修复 `OrderController` 从 cart_items 查询不存在字段的问题
+- 修复 order-service 启动问题（require 路径错误）
+
 ### 2026-04-15 - 共享模块提取与优化
 
 **后端优化：**
-- 新增 `shared/express-common.js` - 提取5个服务共享的Express boilerplate（请求日志、限流、CORS、graceful shutdown）
+- 新增 `shared/express-common.js` - 提取5个服务共享的Express boilerplate
 - 新增 `shared/database.js` - 统一数据库连接池工厂
 - 新增 `shared/middleware/errorHandler.js` - 统一错误处理中间件
 - 新增 `shared/utils/response.js` - 统一响应助手函数
 - 新增 `shared/config/services.js` - 服务URL集中管理
 - 统一 JWT_SECRET 在 `shared/middleware/AuthMiddleware.js`
-- 修复 product-service JWT_SECRET 环境变量传递问题
-- 修复 payment-service webhook 中间件顺序（express.raw 必须在 rate limiter 之前）
-- 修复 order-service 多数据库池配置问题
-- 删除各服务冗余的 AuthMiddleware.js，统一使用 shared 模块
+- 修复各服务 JWT_SECRET 环境变量传递问题
+- 修复 payment-service webhook 中间件顺序
+- 删除各服务冗余的 AuthMiddleware.js
 
 **前端优化：**
-- 修复管理员路由守卫（检查 `role !== 'admin'`）
-- 新增 `frontend/src/utils/categories.js` - 统一分类映射
-- 新增 `frontend/src/utils/formatters.js` - 共享工具函数（状态标签、时间格式化）
-- 修复 admin 产品管理分类筛选
-- 修复 order API params 传递
-- 修复 cart 请求竞态条件
-- 修复管理员操作商品时登出问题
+- 修复管理员路由守卫
+- 新增分类映射和格式化工具函数
+- 修复产品管理分类筛选
+- 修复订单和购物车相关问题
 
 ### 2026-04-12 - 前后端分离与JWT统一
 - 实现前后端完全分离架构
@@ -235,11 +261,12 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## 部署
 
-### Docker 部署
+### Docker 部署（推荐）
 ```bash
 cd e-commerce-platform
 docker-compose up -d
 ```
+访问 http://localhost:80
 
 ### 云平台部署
 - Fly.io

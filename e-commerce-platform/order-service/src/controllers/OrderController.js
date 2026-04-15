@@ -22,9 +22,9 @@ class OrderController {
       const userId = req.user.id;
       const { shipping_address } = req.body;
 
-      // Get cart items from cart_db (product_name is stored, price will be fetched in real-time)
+      // Get cart items from cart_db
       const [cartItems] = await cartPool.execute(
-        'SELECT product_id, product_name, quantity FROM cart_items WHERE user_id = ?',
+        'SELECT product_id, quantity FROM cart_items WHERE user_id = ?',
         [userId]
       );
 
@@ -33,17 +33,20 @@ class OrderController {
         return res.status(400).json({ error: 'Cart is empty' });
       }
 
-      // Fetch real-time prices from product-service
+      // Fetch real-time product info and prices from product-service
       let totalAmount = 0;
       const itemsWithPrice = [];
       for (const item of cartItems) {
         try {
           const response = await axios.get(`${SERVICES.product.internalUrl}/api/products/${item.product_id}`);
-          const currentPrice = parseFloat(response.data.product.price);
+          const product = response.data.product;
+          const currentPrice = parseFloat(product.price);
           totalAmount += currentPrice * item.quantity;
           itemsWithPrice.push({
-            ...item,
-            currentPrice
+            product_id: item.product_id,
+            product_name: product.name,
+            currentPrice,
+            quantity: item.quantity
           });
         } catch (apiError) {
           console.error(`Failed to fetch price for product ${item.product_id}:`, apiError);
